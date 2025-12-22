@@ -1,0 +1,28 @@
+@import '~@fluentui/react/dist/sass/References.scss';
+
+.submissionsList {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--bodyDivider, $ms-color-neutralLight);
+  border-radius: 4px;
+  background-color: var(--bodyBackground, $ms-color-white);
+
+  &.dark {
+    background-color: var(--bodyBackground, $ms-color-neutralDark);
+  }
+}
+
+.listContainer {
+  margin-top: 12px;
+}
+
+.emptyState {
+  padding: 16px;
+  color: var(--bodyText, $ms-color-neutralSecondary);
+}
+
+.loadMore {
+  padding: 12px 0;
+  display: flex;
+  justify-content: center;
+}

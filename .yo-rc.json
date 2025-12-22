@@ -1,0 +1,19 @@
+{
+  "@microsoft/generator-sharepoint": {
+    "useGulp": false,
+    "plusBeta": false,
+    "isCreatingSolution": true,
+    "nodeVersion": "22.20.0",
+    "sdksVersions": {},
+    "version": "1.22.1",
+    "libraryName": "smart-form",
+    "libraryId": "54a29f1a-bbee-4e5f-a27c-a73c758b1cca",
+    "environment": "spo",
+    "packageManager": "npm",
+    "solutionName": "smart-form",
+    "solutionShortDescription": "smart-form description",
+    "skipFeatureDeployment": true,
+    "isDomainIsolated": false,
+    "componentType": "webpart"
+  }
+}

@@ -1,0 +1,64 @@
+@import '~@fluentui/react/dist/sass/References.scss';
+
+.fieldContainer {
+  margin-bottom: 20px;
+}
+
+.fieldWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fieldDescription {
+  font-size: $ms-font-size-s;
+  color: var(--bodyText, $ms-color-neutralSecondary);
+  margin-top: 4px;
+}
+
+.errorMessage {
+  font-size: $ms-font-size-s;
+  color: $ms-color-error;
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+
+  &::before {
+    content: '⚠';
+  }
+}
+
+.unsupportedField {
+  padding: 12px;
+  background-color: $ms-color-warningBackground;
+  border: 1px solid $ms-color-warning;
+  border-radius: 4px;
+
+  p {
+    margin: 0;
+    color: $ms-color-warning;
+    font-size: $ms-font-size-m;
+  }
+}
+
+.peoplePlaceholder {
+  padding: 16px;
+  background-color: var(--bodyBackgroundHovered, $ms-color-neutralLighter);
+  border: 1px dashed var(--bodyDivider, $ms-color-neutralQuaternaryAlt);
+  border-radius: 4px;
+  text-align: center;
+
+  p {
+    margin: 4px 0;
+    font-size: $ms-font-size-s;
+    color: var(--bodyText, $ms-color-neutralSecondary);
+  }
+}
+
+// Responsive design
+@media (max-width: 640px) {
+  .fieldContainer {
+    margin-bottom: 16px;
+  }
+}

@@ -1,0 +1,123 @@
+@import '~@fluentui/react/dist/sass/References.scss';
+
+.formRenderer {
+  position: relative;
+  padding: 20px;
+  background-color: var(--bodyBackground, $ms-color-white);
+  border: 1px solid var(--bodyDivider, $ms-color-neutralLight);
+  border-radius: 4px;
+}
+
+.spinnerOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  border-radius: 4px;
+}
+
+.formHeader {
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--bodyDivider, $ms-color-neutralLight);
+
+  .formTitle {
+    font-size: $ms-font-size-xl;
+    font-weight: $ms-font-weight-semibold;
+    color: var(--bodyText, $ms-color-neutralPrimary);
+  }
+
+  .formDescription {
+    margin: 8px 0 0 0;
+    font-size: $ms-font-size-m;
+    color: var(--bodyText, $ms-color-neutralSecondary);
+  }
+
+  .fieldCount {
+    margin-top: 8px;
+    font-size: $ms-font-size-s;
+    color: var(--bodyText, $ms-color-neutralTertiary);
+    font-style: italic;
+  }
+}
+
+.formFields {
+  margin-bottom: 24px;
+
+  // Grid layout for larger screens
+  @media (min-width: 1024px) {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+  }
+}
+
+// Content wrapper inside each tab
+.tabContent {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+.formActions {
+  padding-top: 20px;
+  border-top: 1px solid var(--bodyDivider, $ms-color-neutralLight);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.validationSummary {
+  padding: 12px 16px;
+  background-color: $ms-color-errorBackground;
+  border-left: 4px solid $ms-color-error;
+  border-radius: 4px;
+  margin-top: 16px;
+
+  p {
+    margin: 0 0 8px 0;
+    font-weight: $ms-font-weight-semibold;
+    color: $ms-color-error;
+    font-size: $ms-font-size-m;
+  }
+
+  ul {
+    margin: 0;
+    padding-left: 20px;
+
+    li {
+      margin: 4px 0;
+      font-size: $ms-font-size-s;
+      color: $ms-color-error;
+
+      strong {
+        font-weight: $ms-font-weight-semibold;
+      }
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 640px) {
+  .formRenderer {
+    padding: 16px;
+  }
+
+  .formActions {
+    :global(.ms-Stack) {
+      flex-direction: column;
+      align-items: stretch;
+
+      button {
+        width: 100%;
+      }
+    }
+  }
+}

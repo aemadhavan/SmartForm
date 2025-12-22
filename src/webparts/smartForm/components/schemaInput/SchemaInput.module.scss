@@ -1,0 +1,58 @@
+@import '~@fluentui/react/dist/sass/References.scss';
+
+.schemaInput {
+  padding: 20px;
+  background-color: var(--bodyBackground, $ms-color-white);
+  border: 1px solid var(--bodyDivider, $ms-color-neutralLight);
+  border-radius: 4px;
+
+  .header {
+    .title {
+      font-size: $ms-font-size-xl;
+      font-weight: $ms-font-weight-semibold;
+      color: var(--bodyText, $ms-color-neutralPrimary);
+    }
+
+    .description {
+      margin: 8px 0 0 0;
+      font-size: $ms-font-size-m;
+      color: var(--bodyText, $ms-color-neutralSecondary);
+    }
+  }
+
+  .fileUpload {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+    .hiddenFileInput {
+      display: none;
+    }
+
+    .fileInfo {
+      padding: 8px 12px;
+      background-color: var(--bodyBackgroundHovered, $ms-color-neutralLighter);
+      border-radius: 4px;
+
+      .fileName {
+        font-size: $ms-font-size-m;
+        color: var(--bodyText, $ms-color-neutralPrimary);
+        word-break: break-word;
+      }
+    }
+  }
+
+  .helpText {
+    margin-top: 10px;
+    padding: 12px;
+    background-color: var(--bodyBackgroundHovered, $ms-color-neutralLighter);
+    border-left: 3px solid var(--link, $ms-color-themePrimary);
+    border-radius: 2px;
+
+    p {
+      margin: 4px 0 0 0;
+      font-size: $ms-font-size-s;
+      color: var(--bodyText, $ms-color-neutralSecondary);
+    }
+  }
+}

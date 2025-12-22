@@ -1,0 +1,60 @@
+@import '~@fluentui/react/dist/sass/References.scss';
+
+.smartForm {
+  overflow: hidden;
+  padding: 1em;
+  color: "[theme:bodyText, default: #323130]";
+  color: var(--bodyText);
+  background-color: var(--bodyBackground, $ms-color-white);
+
+  &.dark {
+    background-color: var(--bodyBackground, $ms-color-neutralDark);
+  }
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+
+  .formContainer {
+    margin-top: 20px;
+  }
+
+  .schemaInfo {
+    padding: 16px;
+    background-color: var(--bodyBackgroundHovered, $ms-color-neutralLighter);
+    border-radius: 4px;
+    margin-bottom: 20px;
+
+    .schemaLabel {
+      font-size: $ms-font-size-l;
+      font-weight: $ms-font-weight-semibold;
+      color: var(--bodyText, $ms-color-neutralPrimary);
+    }
+  }
+}
+
+// Responsive design
+@media (max-width: 768px) {
+  .smartForm {
+    padding: 0.5em;
+
+    .container {
+      padding: 0;
+    }
+
+    .schemaInfo {
+      padding: 12px;
+
+      :global(.ms-Stack) {
+        flex-direction: column;
+        align-items: flex-start !important;
+
+        button {
+          margin-top: 8px;
+          width: 100%;
+        }
+      }
+    }
+  }
+}

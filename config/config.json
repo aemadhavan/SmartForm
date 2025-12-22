@@ -1,0 +1,19 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/spfx-build/config.2.0.schema.json",
+  "version": "2.0",
+  "bundles": {
+    "smart-form-web-part": {
+      "components": [
+        {
+          "entrypoint": "./lib/webparts/smartForm/SmartFormWebPart.js",
+          "manifest": "./src/webparts/smartForm/SmartFormWebPart.manifest.json"
+        }
+      ]
+    }
+  },
+  "externals": {},
+  "localizedResources": {
+    "SmartFormWebPartStrings": "lib/webparts/smartForm/loc/{locale}.js",
+    "ControlStrings": "node_modules/@pnp/spfx-controls-react/lib/loc/{locale}.js"
+  }
+}
