@@ -56,6 +56,14 @@
   }
 }
 
+.attachmentItem {
+  transition: background-color 0.2s ease;
+  
+  &:hover {
+    background-color: var(--bodyBackgroundHovered, $ms-color-neutralLighter) !important;
+  }
+}
+
 // Responsive design
 @media (max-width: 640px) {
   .fieldContainer {

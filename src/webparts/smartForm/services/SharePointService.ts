@@ -29,6 +29,14 @@ export class SharePointService {
   private context: WebPartContext;
   private _libraryFieldsCache: { [libraryName: string]: { [internalName: string]: true } } = {};
 
+  private static generateGuid(): string {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      const r = (Math.random() * 16) | 0,
+        v = c === 'x' ? r : (r & 0x3) | 0x8;
+      return v.toString(16);
+    });
+  }
+
   constructor(context: WebPartContext) {
     this.context = context;
   }
@@ -121,6 +129,179 @@ export class SharePointService {
       return `${folderServerRelativeUrl}/${sanitizedFileName}`;
     } catch (error: any) {
       console.error('Error uploading JSON file:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Ensures a folder exists within a library
+   */
+  public async ensureFolderExists(
+    libraryName: string,
+    folderPath: string
+  ): Promise<string> {
+    try {
+      const webUrl = this.context.pageContext.web.absoluteUrl;
+      const rootFolderUrl = await this.getLibraryRootFolderServerRelativeUrl(libraryName);
+
+      const parts = folderPath.split('/').filter(p => !!p);
+      let currentPath = rootFolderUrl;
+
+      for (const part of parts) {
+        currentPath = `${currentPath}/${part}`;
+        const safePath = this.escapeODataValue(currentPath);
+        const endpoint = `${webUrl}/_api/web/folders/add('${safePath}')`;
+
+        const response: SPHttpClientResponse = await this.context.spHttpClient.post(
+          endpoint,
+          SPHttpClient.configurations.v1,
+          {}
+        );
+
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.warn(`Failed to create/ensure folder '${currentPath}':`, errorText);
+        }
+      }
+
+      return currentPath;
+    } catch (error: any) {
+      console.error('Error ensuring folder exists:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Uploads a raw File object to a SharePoint folder.
+   * Uses chunked upload for files larger than 10MB.
+   */
+  public async uploadFile(
+    folderServerRelativeUrl: string,
+    file: File
+  ): Promise<string> {
+    const CHUNK_SIZE = 10 * 1024 * 1024; // 10MB
+    if (file.size <= CHUNK_SIZE) {
+      return this.uploadFileSingle(folderServerRelativeUrl, file);
+    } else {
+      return this.uploadFileChunked(folderServerRelativeUrl, file, CHUNK_SIZE);
+    }
+  }
+
+  /**
+   * Uploads a file in a single request.
+   */
+  private async uploadFileSingle(
+    folderServerRelativeUrl: string,
+    file: File
+  ): Promise<string> {
+    try {
+      const webUrl = this.context.pageContext.web.absoluteUrl;
+      const safeFolderUrl = this.escapeODataValue(folderServerRelativeUrl);
+      const safeFileName = this.escapeODataValue(file.name);
+
+      const endpoint = `${webUrl}/_api/web/GetFolderByServerRelativeUrl('${safeFolderUrl}')/Files/add(url='${safeFileName}',overwrite=true)`;
+
+      const response: SPHttpClientResponse = await this.context.spHttpClient.post(
+        endpoint,
+        SPHttpClient.configurations.v1,
+        {
+          body: file,
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to upload file: ${response.statusText}. ${errorText}`);
+      }
+
+      const result = await response.json();
+      return result.ServerRelativeUrl || `${folderServerRelativeUrl}/${file.name}`;
+    } catch (error: any) {
+      console.error('Error uploading file (single):', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Uploads a file using SharePoint's chunked upload REST API.
+   */
+  private async uploadFileChunked(
+    folderServerRelativeUrl: string,
+    file: File,
+    chunkSize: number
+  ): Promise<string> {
+    try {
+      const webUrl = this.context.pageContext.web.absoluteUrl;
+      const safeFolderUrl = this.escapeODataValue(folderServerRelativeUrl);
+      const safeFileName = this.escapeODataValue(file.name);
+      const uploadId = SharePointService.generateGuid();
+
+      // 1. Create the file and start upload
+      let offset = 0;
+      let chunk = file.slice(offset, offset + chunkSize);
+
+      let endpoint = `${webUrl}/_api/web/GetFolderByServerRelativeUrl('${safeFolderUrl}')/Files/add(url='${safeFileName}',overwrite=true)`;
+      let response: SPHttpClientResponse = await this.context.spHttpClient.post(
+        endpoint,
+        SPHttpClient.configurations.v1,
+        {}
+      );
+
+      if (!response.ok) {
+        throw new Error(`FAILED to create file for chunked upload: ${response.statusText}`);
+      }
+
+      endpoint = `${webUrl}/_api/web/GetFileByServerRelativeUrl('${safeFolderUrl}/${safeFileName}')/StartUpload(uploadId=guid'${uploadId}')`;
+      response = await this.context.spHttpClient.post(
+        endpoint,
+        SPHttpClient.configurations.v1,
+        { body: chunk }
+      );
+
+      if (!response.ok) {
+        throw new Error(`FAILED StartUpload: ${response.statusText}`);
+      }
+
+      const firstResult = await response.json();
+      offset = parseInt(firstResult.value || firstResult.StartUpload || chunk.size);
+
+      // 2. Continue upload
+      while (offset < file.size - chunkSize) {
+        chunk = file.slice(offset, offset + chunkSize);
+        endpoint = `${webUrl}/_api/web/GetFileByServerRelativeUrl('${safeFolderUrl}/${safeFileName}')/ContinueUpload(uploadId=guid'${uploadId}',fileOffset=${offset})`;
+
+        response = await this.context.spHttpClient.post(
+          endpoint,
+          SPHttpClient.configurations.v1,
+          { body: chunk }
+        );
+
+        if (!response.ok) {
+          throw new Error(`FAILED ContinueUpload at offset ${offset}: ${response.statusText}`);
+        }
+
+        const result = await response.json();
+        offset = parseInt(result.value || result.ContinueUpload || (offset + chunk.size));
+      }
+
+      // 3. Finish upload
+      chunk = file.slice(offset);
+      endpoint = `${webUrl}/_api/web/GetFileByServerRelativeUrl('${safeFolderUrl}/${safeFileName}')/FinishUpload(uploadId=guid'${uploadId}',fileOffset=${offset})`;
+
+      response = await this.context.spHttpClient.post(
+        endpoint,
+        SPHttpClient.configurations.v1,
+        { body: chunk }
+      );
+
+      if (!response.ok) {
+        throw new Error(`FAILED FinishUpload: ${response.statusText}`);
+      }
+
+      const finalResult = await response.json();
+      return finalResult.ServerRelativeUrl || `${folderServerRelativeUrl}/${file.name}`;
+    } catch (error: any) {
+      console.error('Error uploading file (chunked):', error);
       throw error;
     }
   }
@@ -480,7 +661,7 @@ export class SharePointService {
   }
 
   /**
-   * Searches for SharePoint users (for People Picker)
+   * Searches for SharePoint users (for People Picker) - Global AD search
    */
   public async searchUsers(searchText: string, maxResults: number = 10): Promise<any[]> {
     try {
@@ -489,22 +670,41 @@ export class SharePointService {
       }
 
       const webUrl = this.context.pageContext.web.absoluteUrl;
-      const filter = `substringof('${searchText}', Title) or substringof('${searchText}', Email)`;
-      const endpoint = `${webUrl}/_api/web/siteusers?$filter=${filter}&$top=${maxResults}&$select=Id,Title,Email,LoginName`;
+      const endpoint = `${webUrl}/_api/SP.UI.ApplicationPages.ClientPeoplePickerWebServiceInterface.clientPeoplePickerSearchUser`;
 
-      const response: SPHttpClientResponse = await this.context.spHttpClient.get(
+      const response: SPHttpClientResponse = await this.context.spHttpClient.post(
         endpoint,
-        SPHttpClient.configurations.v1
+        SPHttpClient.configurations.v1,
+        {
+          body: JSON.stringify({
+            queryParams: {
+              QueryString: searchText,
+              MaximumEntitySuggestions: maxResults,
+              AllowEmailAddresses: true,
+              AllowMultipleEntities: false,
+              AllUrlZones: false,
+              PrincipalType: 1, // Users
+              PrincipalSource: 15, // All
+            },
+          }),
+        }
       );
 
       if (!response.ok) {
-        throw new Error(`Failed to search users: ${response.statusText}`);
+        throw new Error(`Failed to search users globally: ${response.statusText}`);
       }
 
       const result = await response.json();
-      return result.value || [];
+      const people = JSON.parse(result.value || '[]');
+
+      return people.map((p: any) => ({
+        Id: p.EntityData?.SPUserID ? parseInt(p.EntityData.SPUserID) : -1,
+        Title: p.DisplayText,
+        Email: p.EntityData?.Email || p.Key,
+        LoginName: p.Key,
+      }));
     } catch (error) {
-      console.error('Error searching users:', error);
+      console.error('Error searching users globally:', error);
       return [];
     }
   }

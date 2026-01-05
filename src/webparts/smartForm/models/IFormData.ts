@@ -10,6 +10,13 @@ export interface IPeopleValue {
   loginName: string;
 }
 
+export interface IAttachmentValue {
+  fileName: string;
+  serverRelativeUrl?: string; // Present after upload
+  size: number;
+  fileContent?: File; // Present before upload
+}
+
 export type FormFieldValue =
   | string
   | number
@@ -19,6 +26,7 @@ export type FormFieldValue =
   | IPeopleValue
   | IPeopleValue[]
   | IHyperlinkValue
+  | IAttachmentValue[]
   | null
   | undefined;
 

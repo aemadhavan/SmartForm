@@ -3,7 +3,7 @@
   "solution": {
     "name": "smart-form-client-side-solution",
     "id": "54a29f1a-bbee-4e5f-a27c-a73c758b1cca",
-    "version": "1.0.0.0",
+    "version": "1.0.0.1",
     "includeClientSideAssets": true,
     "skipFeatureDeployment": true,
     "isDomainIsolated": false,

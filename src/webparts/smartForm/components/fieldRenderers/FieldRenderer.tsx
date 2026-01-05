@@ -10,6 +10,7 @@ import ChoiceField from './ChoiceField';
 import MultiChoiceField from './MultiChoiceField';
 import PeopleField from './PeopleField';
 import HyperlinkField from './HyperlinkField';
+import AttachmentField from './AttachmentField';
 import styles from './FieldRenderer.module.scss';
 
 const FieldRenderer: React.FC<IFieldRendererProps> = (props) => {
@@ -43,6 +44,9 @@ const FieldRenderer: React.FC<IFieldRendererProps> = (props) => {
 
       case FieldType.Hyperlink:
         return <HyperlinkField {...props} />;
+
+      case FieldType.Attachment:
+        return <AttachmentField {...props} />;
 
       default:
         return (

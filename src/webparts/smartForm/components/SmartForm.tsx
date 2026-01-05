@@ -9,7 +9,8 @@ import DynamicFormRenderer from './formRenderer/DynamicFormRenderer';
 import MessageDisplay from './common/MessageDisplay';
 import SubmissionsList from './submissionsList/SubmissionsList';
 import { FormSchema } from '../models/IFormSchema';
-import { IFormData, FormFieldValue, IFormSubmission } from '../models/IFormData';
+import { FieldType } from '../models/FormFieldTypes';
+import { IFormData, FormFieldValue, IFormSubmission, IAttachmentValue } from '../models/IFormData';
 import { IValidationError } from '../models/IValidationError';
 import { SharePointService } from '../services/SharePointService';
 import { FormValidationService } from '../services/FormValidationService';
@@ -244,19 +245,46 @@ const SmartForm: React.FC<ISmartFormProps> = (props) => {
       // Build submission object
       const nowIso = new Date().toISOString();
 
+      // Handle attachments if any
+      const submissionData = { ...formData };
+      for (const field of schema) {
+        if (field.fieldType === FieldType.Attachment) {
+          const attachments = submissionData[field.fieldName] as IAttachmentValue[];
+          if (attachments && attachments.length > 0) {
+            const folderPath = `Submissions/Attachments/${FileNameGenerator.generateFileName(props.fileNamePattern, currentUser.displayName).replace('.json', '')}`;
+            const folderUrl = await spService.ensureFolderExists(props.targetLibraryName, folderPath);
+
+            const uploadedAttachments: IAttachmentValue[] = [];
+            for (const attachment of attachments) {
+              if (attachment.fileContent) {
+                const uploadedUrl = await spService.uploadFile(folderUrl, attachment.fileContent);
+                uploadedAttachments.push({
+                  fileName: attachment.fileName,
+                  size: attachment.size,
+                  serverRelativeUrl: uploadedUrl
+                });
+              } else {
+                uploadedAttachments.push(attachment);
+              }
+            }
+            submissionData[field.fieldName] = uploadedAttachments;
+          }
+        }
+      }
+
       const submission: IFormSubmission = editFileName && editOriginalSubmissionMeta
         ? {
-            submittedAt: editOriginalSubmissionMeta.submittedAt,
-            submittedBy: editOriginalSubmissionMeta.submittedBy,
-            editedAt: nowIso,
-            editedBy: currentUser.displayName,
-            formData: formData,
-          }
+          submittedAt: editOriginalSubmissionMeta.submittedAt,
+          submittedBy: editOriginalSubmissionMeta.submittedBy,
+          editedAt: nowIso,
+          editedBy: currentUser.displayName,
+          formData: submissionData,
+        }
         : {
-            submittedAt: nowIso,
-            submittedBy: currentUser.displayName,
-            formData: formData,
-          };
+          submittedAt: nowIso,
+          submittedBy: currentUser.displayName,
+          formData: submissionData,
+        };
 
       // Add schema if configured
       if (props.persistSchema) {
@@ -343,9 +371,8 @@ const SmartForm: React.FC<ISmartFormProps> = (props) => {
       console.error('Form submission error:', error);
       setMessage({
         type: 'error',
-        text: `${Constants.ERROR_MESSAGES.FORM_SUBMISSION_FAILED} ${
-          error.message || ''
-        }`,
+        text: `${Constants.ERROR_MESSAGES.FORM_SUBMISSION_FAILED} ${error.message || ''
+          }`,
       });
     } finally {
       setIsSubmitting(false);

@@ -7,7 +7,8 @@ export enum FieldType {
   Choice = 'Choice',
   MultiChoice = 'MultiChoice',
   People = 'People',
-  Hyperlink = 'Hyperlink'
+  Hyperlink = 'Hyperlink',
+  Attachment = 'Attachment'
 }
 
 export const SUPPORTED_FIELD_TYPES: string[] = [
@@ -19,5 +20,6 @@ export const SUPPORTED_FIELD_TYPES: string[] = [
   FieldType.Choice,
   FieldType.MultiChoice,
   FieldType.People,
-  FieldType.Hyperlink
+  FieldType.Hyperlink,
+  FieldType.Attachment
 ];

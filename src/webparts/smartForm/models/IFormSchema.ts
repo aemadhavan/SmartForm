@@ -41,6 +41,11 @@ export interface IFormFieldSchema {
   minDate?: string;
   maxDate?: string;
 
+  // Attachment specific
+  accept?: string;
+  maxSize?: number;
+  maxFiles?: number;
+
   // General
   description?: string;
   defaultValue?: any;
