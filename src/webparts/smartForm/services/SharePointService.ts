@@ -573,6 +573,39 @@ export class SharePointService {
   }
 
   /**
+   * Deletes a folder by its ServerRelativeUrl
+   */
+  public async deleteFolderByServerRelativeUrl(serverRelativeUrl: string): Promise<void> {
+    try {
+      const webUrl = this.context.pageContext.web.absoluteUrl;
+      const safeUrl = this.escapeODataValue(serverRelativeUrl);
+      const endpoint = `${webUrl}/_api/web/GetFolderByServerRelativeUrl('${safeUrl}')`;
+
+      const response: SPHttpClientResponse = await this.context.spHttpClient.post(
+        endpoint,
+        SPHttpClient.configurations.v1,
+        {
+          headers: {
+            'IF-MATCH': '*',
+            'X-HTTP-Method': 'DELETE',
+          },
+        }
+      );
+
+      if (!response.ok) {
+        // If folder doesn't exist, we might get a 404, which is fine for cleanup
+        if (response.status !== 404) {
+          const errorText = await response.text();
+          throw new Error(`Failed to delete folder: ${response.statusText}. ${errorText}`);
+        }
+      }
+    } catch (error: any) {
+      console.error('Error deleting folder:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Gets the current user's information
    */
   public async getCurrentUser(): Promise<ISharePointUser> {

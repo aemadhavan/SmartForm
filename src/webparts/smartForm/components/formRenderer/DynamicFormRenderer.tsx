@@ -17,7 +17,11 @@ const DynamicFormRenderer: React.FC<IDynamicFormRendererProps> = ({
   onSubmit,
   onReset,
   onDownloadJson,
+  onSaveAsCopy,
   isSubmitting,
+  isEditing,
+  showDownloadJson,
+  formTitle,
   context,
 }) => {
   const [activeTabKey, setActiveTabKey] = React.useState<string | undefined>(
@@ -126,7 +130,7 @@ const DynamicFormRenderer: React.FC<IDynamicFormRendererProps> = ({
       )}
 
       <div className={styles.formHeader}>
-        <Label className={styles.formTitle}>Powers Form</Label>
+        <Label className={styles.formTitle}>{formTitle}</Label>
         <p className={styles.formDescription}>
           Fill out the form below. Fields marked with * are required.
         </p>
@@ -164,12 +168,21 @@ const DynamicFormRenderer: React.FC<IDynamicFormRendererProps> = ({
       <div className={styles.formActions}>
         <Stack horizontal tokens={{ childrenGap: 10 }} wrap>
           <PrimaryButton
-            text="Submit"
+            text={isEditing ? 'Update Submission' : 'Submit'}
             onClick={onSubmit}
             disabled={isSubmitting}
-            iconProps={{ iconName: 'Send' }}
-            aria-label="Submit form"
+            iconProps={isEditing ? { iconName: 'Save' } : { iconName: 'Send' }}
+            aria-label={isEditing ? 'Update existing submission' : 'Submit form'}
           />
+          {isEditing && onSaveAsCopy && (
+            <DefaultButton
+              text="Save as Copy"
+              onClick={onSaveAsCopy}
+              disabled={isSubmitting}
+              iconProps={{ iconName: 'Copy' }}
+              aria-label="Save this data as a new submission"
+            />
+          )}
           <DefaultButton
             text="Reset Form"
             onClick={onReset}
@@ -177,13 +190,15 @@ const DynamicFormRenderer: React.FC<IDynamicFormRendererProps> = ({
             iconProps={{ iconName: 'Refresh' }}
             aria-label="Reset form"
           />
-          <DefaultButton
-            text="Download JSON"
-            onClick={onDownloadJson}
-            disabled={isSubmitting}
-            iconProps={{ iconName: 'Download' }}
-            aria-label="Download form data as JSON"
-          />
+          {showDownloadJson && (
+            <DefaultButton
+              text="Download JSON"
+              onClick={onDownloadJson}
+              disabled={isSubmitting}
+              iconProps={{ iconName: 'Download' }}
+              aria-label="Download form data as JSON"
+            />
+          )}
         </Stack>
 
         {validationErrors.length > 0 && (

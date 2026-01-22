@@ -21,6 +21,9 @@ export interface ISmartFormWebPartProps {
   fileNamePattern: string;
   persistSchema: boolean;
   showSuccessMessage: boolean;
+  showSchemaBanner: boolean;
+  showDownloadJson: boolean;
+  formTitle: string;
   schemaJson: string;
   submittedItemsColumns: string[];
   submittedItemsPageSize: number;
@@ -64,6 +67,9 @@ export default class SmartFormWebPart extends BaseClientSideWebPart<ISmartFormWe
         fileNamePattern: this.properties.fileNamePattern || 'FormSubmission_{timestamp}_{userName}.json',
         persistSchema: this.properties.persistSchema !== undefined ? this.properties.persistSchema : true,
         showSuccessMessage: this.properties.showSuccessMessage !== undefined ? this.properties.showSuccessMessage : true,
+        showSchemaBanner: this.properties.showSchemaBanner !== undefined ? this.properties.showSchemaBanner : false,
+        showDownloadJson: this.properties.showDownloadJson !== undefined ? this.properties.showDownloadJson : false,
+        formTitle: this.properties.formTitle || 'Smart Form',
         submittedItemsColumns: this.properties.submittedItemsColumns || [],
         submittedItemsPageSize: this.properties.submittedItemsPageSize || 50,
         isDarkTheme: this._isDarkTheme
@@ -212,6 +218,23 @@ export default class SmartFormWebPart extends BaseClientSideWebPart<ISmartFormWe
                   onText: 'Yes',
                   offText: 'No',
                   checked: this.properties.showSuccessMessage !== undefined ? this.properties.showSuccessMessage : true
+                }),
+                PropertyPaneToggle('showSchemaBanner', {
+                  label: 'Show Schema Info Banner',
+                  onText: 'Yes',
+                  offText: 'No',
+                  checked: this.properties.showSchemaBanner !== undefined ? this.properties.showSchemaBanner : false
+                }),
+                PropertyPaneToggle('showDownloadJson', {
+                  label: 'Show Download JSON Button',
+                  onText: 'Yes',
+                  offText: 'No',
+                  checked: this.properties.showDownloadJson !== undefined ? this.properties.showDownloadJson : false
+                }),
+                PropertyPaneTextField('formTitle', {
+                  label: 'Form Title',
+                  description: 'The title displayed at the top of the form.',
+                  value: this.properties.formTitle || 'Smart Form'
                 })
               ]
             }

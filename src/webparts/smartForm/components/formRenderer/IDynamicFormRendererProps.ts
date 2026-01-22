@@ -11,6 +11,10 @@ export interface IDynamicFormRendererProps {
   onSubmit: () => void;
   onReset: () => void;
   onDownloadJson: () => void;
+  onSaveAsCopy?: () => void;
   isSubmitting: boolean;
+  isEditing?: boolean;
+  showDownloadJson: boolean;
+  formTitle: string;
   context: WebPartContext;
 }

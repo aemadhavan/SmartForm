@@ -96,9 +96,23 @@ const AttachmentField: React.FC<IFieldRendererProps> = ({ field, value, onChange
                         }}
                     >
                         <Stack.Item grow>
-                            <Text variant="medium">
-                                {file.fileName} <Text variant="small" style={{ color: '#605e5c' }}>({formatSize(file.size)})</Text>
-                            </Text>
+                            {file.serverRelativeUrl ? (
+                                <a
+                                    href={file.serverRelativeUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    data-interception="off"
+                                    style={{ textDecoration: 'none', color: '#0078d4', cursor: 'pointer' }}
+                                >
+                                    <Text variant="medium">
+                                        {file.fileName} <Text variant="small" style={{ color: '#605e5c' }}>({formatSize(file.size)})</Text>
+                                    </Text>
+                                </a>
+                            ) : (
+                                <Text variant="medium">
+                                    {file.fileName} <Text variant="small" style={{ color: '#605e5c' }}>({formatSize(file.size)})</Text>
+                                </Text>
+                            )}
                         </Stack.Item>
                         <IconButton
                             iconProps={{ iconName: 'Cancel' }}

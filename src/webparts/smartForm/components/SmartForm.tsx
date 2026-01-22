@@ -207,7 +207,10 @@ const SmartForm: React.FC<ISmartFormProps> = (props) => {
   /**
    * Handle form submission
    */
-  const handleSubmit = useCallback(async (): Promise<void> => {
+  const handleSubmit = useCallback(async (event?: React.FormEvent, isSaveAsCopy: boolean = false): Promise<void> => {
+    if (event) {
+      event.preventDefault();
+    }
     if (!schema) {
       return;
     }
@@ -247,17 +250,51 @@ const SmartForm: React.FC<ISmartFormProps> = (props) => {
 
       // Handle attachments if any
       const submissionData = { ...formData };
+
+      // Generate file name (or keep original when editing, unless saving as copy)
+      const targetFileName = (editFileName && !isSaveAsCopy)
+        ? editFileName
+        : FileNameGenerator.generateFileName(props.fileNamePattern, currentUser.displayName);
+
+      // Determine a common folder name for all attachments in this submission
+      // Always match the folder name to the filename (minus .json) to ensure consistency.
+      const submissionFolderName = targetFileName.replace('.json', '');
+      const sharedAttachmentFolderPath = `Submissions/Attachments/${submissionFolderName}`;
+      let sharedAttachmentFolderUrl: string | null = null;
+
+      const currentEditOriginalData = isSaveAsCopy ? null : editOriginalData;
+
       for (const field of schema) {
         if (field.fieldType === FieldType.Attachment) {
           const attachments = submissionData[field.fieldName] as IAttachmentValue[];
+
+          // Handle orphan cleanup if in edit mode (and NOT saving as copy): delete files removed from the UI.
+          if (currentEditOriginalData) {
+            const originalAtts = (currentEditOriginalData[field.fieldName] || []) as IAttachmentValue[];
+            const currentAtts = attachments || [];
+            const toDelete = originalAtts.filter(oa =>
+              oa.serverRelativeUrl &&
+              !currentAtts.some(ca => ca.serverRelativeUrl === oa.serverRelativeUrl)
+            );
+            for (const orphan of toDelete) {
+              try {
+                await spService.deleteFileByServerRelativeUrl(orphan.serverRelativeUrl!);
+              } catch (e) {
+                console.warn(`Failed to delete orphan attachment ${orphan.serverRelativeUrl}:`, e);
+              }
+            }
+          }
+
           if (attachments && attachments.length > 0) {
-            const folderPath = `Submissions/Attachments/${FileNameGenerator.generateFileName(props.fileNamePattern, currentUser.displayName).replace('.json', '')}`;
-            const folderUrl = await spService.ensureFolderExists(props.targetLibraryName, folderPath);
+            // Ensure the shared folder exists only when we actually have attachments to upload
+            if (!sharedAttachmentFolderUrl) {
+              sharedAttachmentFolderUrl = await spService.ensureFolderExists(props.targetLibraryName, sharedAttachmentFolderPath);
+            }
 
             const uploadedAttachments: IAttachmentValue[] = [];
             for (const attachment of attachments) {
               if (attachment.fileContent) {
-                const uploadedUrl = await spService.uploadFile(folderUrl, attachment.fileContent);
+                const uploadedUrl = await spService.uploadFile(sharedAttachmentFolderUrl, attachment.fileContent);
                 uploadedAttachments.push({
                   fileName: attachment.fileName,
                   size: attachment.size,
@@ -291,10 +328,8 @@ const SmartForm: React.FC<ISmartFormProps> = (props) => {
         submission.schema = schema;
       }
 
-      // Generate file name (or keep original when editing)
-      const fileName = editFileName
-        ? editFileName
-        : FileNameGenerator.generateFileName(props.fileNamePattern, currentUser.displayName);
+      // Use the pre-generated filename
+      const fileName = targetFileName;
 
       // Convert to JSON
       const jsonContent = JSON.stringify(submission, null, 2);
@@ -388,6 +423,11 @@ const SmartForm: React.FC<ISmartFormProps> = (props) => {
     editOriginalSubmissionMeta,
   ]);
 
+  const handleSaveAsCopy = useCallback((): void => {
+    // Calling handleSubmit with isSaveAsCopy flag
+    void handleSubmit(undefined, true);
+  }, [handleSubmit]);
+
   /**
    * Handle download JSON of current form data
    */
@@ -469,15 +509,14 @@ const SmartForm: React.FC<ISmartFormProps> = (props) => {
     },
     [schema]
   );
-
   const handleCancelEdit = useCallback((): void => {
     setEditFileName(null);
     setEditOriginalData(null);
     setEditOriginalSubmissionMeta(null);
     setValidationErrors([]);
     setMessage({ type: 'info', text: 'Edit cancelled.' });
-    handleReset();
-  }, [handleReset]);
+    setFormData({});
+  }, []);
 
   /**
    * Handle message dismiss
@@ -498,49 +537,58 @@ const SmartForm: React.FC<ISmartFormProps> = (props) => {
         )}
 
         <Pivot selectedKey={pivotKey} onLinkClick={handlePivotLinkClick}>
-          <PivotItem headerText="New Submission" itemKey="new">
+          <PivotItem
+            headerText={editFileName ? "Edit Submission" : "New Submission"}
+            itemKey="new"
+            itemIcon={editFileName ? "Edit" : "Add"}
+          >
             {!schema ? (
               <div className={styles.formContainer}>
-                <div className={styles.schemaInfo}>
-                  <Stack horizontal verticalAlign="center" tokens={{ childrenGap: 16 }}>
-                    <div>
-                      <Label className={styles.schemaLabel}>Schema not configured</Label>
-                    </div>
-                    <DefaultButton
-                      text="Configure Schema"
-                      onClick={handleEditSchema}
-                      iconProps={{ iconName: 'Settings' }}
-                    />
-                  </Stack>
-                </div>
-              </div>
-            ) : (
-              <div className={styles.formContainer}>
-                <div className={styles.schemaInfo}>
-                  <Stack horizontal verticalAlign="center" tokens={{ childrenGap: 16 }}>
-                    <div>
-                      <Label className={styles.schemaLabel}>
-                        {editFileName
-                          ? `Editing: ${editFileName}`
-                          : `Schema Loaded - ${schema.length} field(s)`}
-                      </Label>
-                    </div>
-                    <Stack horizontal tokens={{ childrenGap: 8 }}>
+                {(props.showSchemaBanner || editFileName) && (
+                  <div className={styles.schemaInfo}>
+                    <Stack horizontal verticalAlign="center" tokens={{ childrenGap: 16 }}>
+                      <div>
+                        <Label className={styles.schemaLabel}>Schema not configured</Label>
+                      </div>
                       <DefaultButton
-                        text="Edit Schema"
+                        text="Configure Schema"
                         onClick={handleEditSchema}
                         iconProps={{ iconName: 'Settings' }}
                       />
-                      {editFileName && (
-                        <DefaultButton
-                          text="Cancel Edit"
-                          onClick={handleCancelEdit}
-                          iconProps={{ iconName: 'Cancel' }}
-                        />
-                      )}
                     </Stack>
-                  </Stack>
-                </div>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className={styles.formContainer}>
+                {(props.showSchemaBanner || editFileName) && (
+                  <div className={styles.schemaInfo}>
+                    <Stack horizontal verticalAlign="center" tokens={{ childrenGap: 16 }}>
+                      <div>
+                        <Label className={styles.schemaLabel}>
+                          {editFileName
+                            ? `Editing: ${editFileName}`
+                            : `Schema Loaded - ${schema.length} field(s)`}
+                        </Label>
+                      </div>
+                      <Stack horizontal tokens={{ childrenGap: 8 }}>
+                        <DefaultButton
+                          text="Edit Schema"
+                          onClick={handleEditSchema}
+                          iconProps={{ iconName: 'Settings' }}
+                        />
+                        {editFileName && (
+                          <DefaultButton
+                            text="Cancel & Start New"
+                            onClick={handleCancelEdit}
+                            iconProps={{ iconName: 'Cancel' }}
+                            title="Exit edit mode and return to a blank form"
+                          />
+                        )}
+                      </Stack>
+                    </Stack>
+                  </div>
+                )}
 
                 <DynamicFormRenderer
                   schema={schema}
@@ -550,7 +598,11 @@ const SmartForm: React.FC<ISmartFormProps> = (props) => {
                   onSubmit={handleSubmit}
                   onReset={handleReset}
                   onDownloadJson={handleDownloadJson}
+                  onSaveAsCopy={handleSaveAsCopy}
                   isSubmitting={isSubmitting}
+                  isEditing={!!editFileName}
+                  showDownloadJson={props.showDownloadJson}
+                  formTitle={props.formTitle}
                   context={props.context}
                 />
               </div>

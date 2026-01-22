@@ -354,8 +354,26 @@ const SubmissionsList: React.FC<ISubmissionsListProps> = ({
     setMessage(null);
 
     try {
-      await spService.deleteFileByServerRelativeUrl(fileToDelete.serverRelativeUrl);
-      setMessage({ type: 'success', text: `Deleted: ${fileToDelete.name}` });
+      // 1. Derive the attachment folder path from the file's server relative URL
+      // File path example: /sites/MySite/MyLibrary/FormSubmission_123_User.json
+      // Attachment folder path: /sites/MySite/MyLibrary/Submissions/Attachments/FormSubmission_123_User
+      const fileUrl = fileToDelete.serverRelativeUrl;
+      const lastSlashIndex = fileUrl.lastIndexOf('/');
+      const libraryPath = fileUrl.substring(0, lastSlashIndex);
+      const fileNameWithoutExtension = fileToDelete.name.replace(/\.[^/.]+$/, "");
+      const attachmentFolderPath = `${libraryPath}/Submissions/Attachments/${fileNameWithoutExtension}`;
+
+      // 2. Try to delete the attachment folder first (ignore errors if it doesn't exist)
+      try {
+        await spService.deleteFolderByServerRelativeUrl(attachmentFolderPath);
+      } catch (e) {
+        console.warn(`Could not delete attachment folder ${attachmentFolderPath}:`, e);
+      }
+
+      // 3. Delete the JSON submission file
+      await spService.deleteFileByServerRelativeUrl(fileUrl);
+
+      setMessage({ type: 'success', text: `Deleted submission: ${fileToDelete.name}` });
       setFileToDelete(null);
       await loadFirstPage();
     } catch (e: any) {

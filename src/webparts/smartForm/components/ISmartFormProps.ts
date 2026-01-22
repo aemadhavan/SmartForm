@@ -9,5 +9,8 @@ export interface ISmartFormProps {
   showSuccessMessage: boolean;
   submittedItemsColumns: string[];
   submittedItemsPageSize: number;
+  showSchemaBanner: boolean;
+  showDownloadJson: boolean;
+  formTitle: string;
   isDarkTheme: boolean;
 }
