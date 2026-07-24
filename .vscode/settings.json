@@ -10,5 +10,7 @@
     "**/lib-amd": true,
     "src/**/*.scss.ts": true
   },
-  "typescript.tsdk": ".\\node_modules\\typescript\\lib"
+  "typescript.tsdk": ".\\node_modules\\typescript\\lib",
+  "snyk.advanced.organization": "7755ed7b-2a25-4dde-8dcd-8d679f5209f8",
+  "snyk.advanced.autoSelectOrganization": true
 }
